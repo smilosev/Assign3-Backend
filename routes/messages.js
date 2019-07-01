@@ -1,50 +1,53 @@
 var express = require('express');
 var router = express.Router();
 
-var messages = [
-  {
-    "id": "1",
-    "from": "Stefan",
-    "message": "This is the initial message"
-  },
-  {
-    "id": "2",
-    "from": "Test",
-    "message": "How are you today?"
-  }
-]
+const MongoClient = require('mongodb').MongoClient;
+const mongo_uri = 'mongodb+srv://m001-student:m001-mongodb-basics@sandbox-3ugst.mongodb.net';
 
 /* GET users listing. */
-router.get('/', function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  console.log(req.params.id);
-  res.setHeader('Content-Type', 'application/json')
-  res.send(JSON.stringify(messages));
+router.get('/', function (req, res, next) {
+  // Connect to the database
+  MongoClient.connect(mongo_uri, function (err, client) {
+    assert.equal(null, err);
+    if ( err ) throw err;
+    console.log("Connected successfully to database");
+    const db = client.db('messages');
+    const collection = db.collection('initialMessages');
+    collection.find({}).toArray(function (err, messages) {
+      console.log(messages);
+      res.send(JSON.stringify(messages));
+    })
+  })
 });
 
-router.post('/', function(req, res, next) {
+router.post('/', function (req, res, next) {
   const newMessage = req.body
-  messages.push(newMessage)
-  res.setHeader('Content-Type', 'application/json')
-  res.send(JSON.stringify(newMessage));
+  console.log(newMessage);
+  console.log(newMessage.from);
+  // Connect to database
+  MongoClient.connect(mongo_uri, function (err, client) {
+    assert.equal(null, err);
+    if ( err ) throw err;
+    console.log("Connected successfully to server");
+    const db = client.db('messages');
+    const collection = db.collection('initialMessages');
+    collection.insertOne({ _id: newMessage.id, from: newMessage.from, message: newMessage.message })
+    res.send(JSON.stringify(newMessage));
+  })
 });
 
-router.delete('/:id', function(req, res) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+router.delete('/:id', function (req, res) {
   const id = req.params.id;
-  let i = 0;
-  for(message of messages) {
-    if (message.id === id) {
-      messages.splice(i, 1);
-      res.send(JSON.stringify(message));
-    }
-    i++;  
-  }
-  res.send("Message not found.")
+  //  Connect to database
+  MongoClient.connect(mongo_uri, function (err, client) {
+    assert.equal(null, err);
+    if ( err ) throw err;
+    console.log("Connected successfully to server");
+    const db = client.db('messages');
+    const collection = db.collection('initialMessages');
+    collection.deleteOne({ _id: id });
+    res.send("Succesfully deleted record with id = " + id);
+  })
 });
-
-
 
 module.exports = router;
